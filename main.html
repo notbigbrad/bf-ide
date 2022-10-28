@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+
+<html>
+    <!-- https://en.wikipedia.org/wiki/Brainfuck -->
+<head>
+    <title>BrainFuck IDE</title>
+    <style>
+        * {
+            padding: 0.25rem;
+            margin: 0;
+        }
+
+        fieldset {
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-shadow: 1px 1px 1px #999;
+        }
+
+        legend {
+            margin-left: 20px;
+        }
+
+        textarea {
+            width: 98%;
+        }
+
+        p {
+            font: monospace;
+        }
+    </style>
+    <script>
+        class interpreter {
+            constructor(mem_width = 32767) {
+                this.memory = [0] * mem_width;
+                this.memPointer = 0;
+                this.program = [];
+                this.programPointer = 0;
+            }
+            findafter() {
+                this.a = this.programPointer;
+                this.b = 0;
+                while (this.program[this.a] != "]" || this.b != 0) {
+                    this.a += 1;
+                    if (this.program[this.a] == "[") { this.b += 1 }
+                    if (this.program[this.a] == "]" && this.b > 0) { this.b -= 1 }
+                }
+                return this.a
+            }
+            findbefore() {
+                this.a = this.programPointer;
+                this.b = 0;
+                while (this.program[this.a] != "[" || this.b != 0) {
+                    this.a -= 1;
+                    if (this.program[this.a] == "]") { this.b += 1 }
+                    if (this.program[this.a] == "[" && this.b > 0) { this.b -= 1 }
+                }
+                return this.a
+            }
+            updateStatus(inner) {
+                document.getElementById("status").innerhtml = inner;
+            }
+            updateOutput(letter) {
+                console.log(letter)
+                document.getElementById("output").value = document.getElementById("output").value.concat(letter);
+            }
+            clearAndRun() {
+                this.memory = Array(32767).fill(0);
+                this.memPointer = 0;
+                this.program = [];
+                this.programPointer = 0;
+                this.run(document.getElementById('code').value);
+            }
+            run(file) {
+                this.program = file.split('');
+                this.updateStatus("running");
+                console.log(this.program)
+                this.t = 0
+                while (this.programPointer < this.program.length && this.t < 1500) {
+                    console.log(`on instruction ${this.programPointer} on memory ${this.memPointer}`);
+                    this.step(this.program[this.programPointer]);
+                    this.t++
+                }
+                this.updateStatus("finnished");
+            }
+            step(instruction) {
+                console.log(instruction)
+                switch (instruction) {
+                    case "<":
+                        this.memPointer -= 1;
+                        if (this.memPointer < 0) {
+                            alert("pointer out of bounds")
+                        }
+                        this.programPointer++
+                        break;
+                    case ">":
+                        this.memPointer += 1;
+                        if (this.memPointer > this.memory.length - 1) {
+                            alert("pointer out of bounds")
+                        }
+                        this.programPointer++
+                        break;
+                    case "+":
+                        this.memory[this.memPointer] += 1
+                        this.programPointer++
+                        break;
+                    case "-":
+                        this.memory[this.memPointer] -= 1
+                        this.programPointer++
+                        break;
+                    case ".":
+                        this.updateOutput(String.fromCharCode(this.memory[this.memPointer]))
+                        this.programPointer++
+                        break;
+                    case ",":
+                        this.updateStatus("awaiting input")
+                        this.memory[this.memPointer] = document.getElementById("input").value.charCodeAt(0);
+                        this.updateStatus("running")
+                        this.programPointer++
+                        break;
+                    case "[":
+                        if (this.memory[this.memPointer] == 0) {
+                            this.programPointer = this.findafter();
+                        } else {
+                            this.programPointer++;
+                        }
+                        break;
+                    case "]":
+                        if (this.memory[this.memPointer] == 0) {
+                            this.programPointer++;
+                        } else {
+                            this.programPointer = this.findbefore();
+                        }
+                        break;
+                    default:
+                        this.programPointer += 1
+                        break;
+                }
+            }
+        }
+        bf = new interpreter()
+    </script>
+</head>
+
+<body>
+
+    <fieldset>
+        <legend>Editor</legend>
+        <button onclick="bf.clearAndRun()">Run</button>
+        <textarea id="code">
+            <!-- >++++++++[<+++++++++>-]<.>++++[<+++++++>-]<+.+++++++..+++.>>++++++[<+++++++>-]<++.------------.>++++++[<+++++++++>-]<+.<.+++.------.--------.>>>++++[<++++++++>-]<+. -->
+    </textarea>
+    </fieldset>
+
+    <fieldset>
+        <legend>Output</legend>
+        <p id="status">unoperational</p>
+        <textarea id="output">
+
+    </textarea>
+    </fieldset>
+
+    <fieldset>
+        <legend>Interact</legend>
+        <textarea id="input">
+
+    </textarea>
+    </fieldset>
+
+</body>
+
+</html>
